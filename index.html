@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="refresh" content="30">
+  <title>Pi Sensor</title>
+  <style>
+    body {
+      font-family: monospace;
+      background: #111;
+      color: #eee;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 100vh;
+      margin: 0;
+    }
+    h1 { font-size: 1.2rem; color: #888; margin-bottom: 2rem; }
+    #distanz { font-size: 5rem; color: #00ff99; }
+    #einheit { font-size: 1.5rem; color: #555; margin-top: 0.5rem; }
+    #timestamp { font-size: 0.85rem; color: #444; margin-top: 2rem; }
+  </style>
+</head>
+<body>
+  <h1>VL53L1X Distanzsensor</h1>
+  <div id="distanz">–</div>
+  <div id="einheit">mm</div>
+  <div id="timestamp">Lade...</div>
+
+  <script>
+    async function load() {
+      try {
+        const res = await fetch("data.json?t=" + Date.now());
+        const data = await res.json();
+        document.getElementById("distanz").textContent = data.distanz_mm;
+        document.getElementById("einheit").textContent = `mm  /  ${data.distanz_cm} cm`;
+        document.getElementById("timestamp").textContent = "Letzte Messung: " + data.timestamp;
+      } catch(e) {
+        document.getElementById("timestamp").textContent = "Keine Daten";
+      }
+    }
+    load();
+    setInterval(load, 30000);
+  </script>
+</body>
+</html>
