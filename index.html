@@ -1,48 +1,69 @@
 <!DOCTYPE html>
 <html lang="de">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta http-equiv="refresh" content="30">
-  <title>Pi Sensor</title>
-  <style>
-    body {
-      font-family: monospace;
-      background: #111;
-      color: #eee;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      height: 100vh;
-      margin: 0;
-    }
-    h1 { font-size: 1.2rem; color: #888; margin-bottom: 2rem; }
-    #distanz { font-size: 5rem; color: #00ff99; }
-    #einheit { font-size: 1.5rem; color: #555; margin-top: 0.5rem; }
-    #timestamp { font-size: 0.85rem; color: #444; margin-top: 2rem; }
-  </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pi Zero Sensor Daten</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        body { font-family: Arial, sans-serif; background: #121212; color: #fff; text-align: center; padding: 50px; }
+        .container { max-width: 600px; margin: auto; background: #1e1e1e; padding: 20px; border-radius: 10px; box-shadow: 0 4px 10px rgba(0,0,0,0.5); }
+        h1 { color: #3ecf8e; } /* Supabase-Grün */
+        #daten-liste { list-style: none; padding: 0; text-align: left; }
+        #daten-liste li { padding: 10px; border-bottom: 1px solid #333; }
+        .zeit { color: #888; font-size: 0.8rem; float: right; }
+    </style>
 </head>
 <body>
-  <h1>VL53L1X Distanzsensor</h1>
-  <div id="distanz">–</div>
-  <div id="einheit">mm</div>
-  <div id="timestamp">Lade...</div>
 
-  <script>
-    async function load() {
-      try {
-        const res = await fetch("data.json?t=" + Date.now());
-        const data = await res.json();
-        document.getElementById("distanz").textContent = data.distanz_mm;
-        document.getElementById("einheit").textContent = `mm  /  ${data.distanz_cm} cm`;
-        document.getElementById("timestamp").textContent = "Letzte Messung: " + data.timestamp;
-      } catch(e) {
-        document.getElementById("timestamp").textContent = "Keine Daten";
-      }
-    }
-    load();
-    setInterval(load, 30000);
-  </script>
+    <div class="container">
+        <h1>Raspberry Pi Daten</h1>
+        <p>Neueste Nachrichten von deinem Pi Zero 2W:</p>
+        <ul id="daten-liste">Lade Daten...</ul>
+    </div>
+
+    <script>
+        // 1. SUPABASE KONFIGURATION
+        // Tausche diese Platzhalter mit deinen echten Supabase-Daten aus!
+        const SUPABASE_URL = "https://oxccbidtyqtzkinbbgcd.supabase.co";
+        const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im94Y2NiaWR0eXF0emtpbmJiZ2NkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzcyMzEwNTUsImV4cCI6MjA5MjgwNzA1NX0.d1zwa5cMxW_Z4vNR4r9cvfQgsQ4B3ujRplHB95ATmGw";
+
+        const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+        // 2. DATEN AUSLESEN
+        async function holeDaten() {
+            // "nachrichten" ist der Name deiner Tabelle in Supabase
+            let { data, error } = await supabase
+                .from('nachrichten') 
+                .select('*')
+                .order('created_at', { ascending: false }) // Neueste zuerst
+                .limit(10); // Nur die letzten 10 anzeigen
+
+            if (error) {
+                console.error("Fehler beim Laden:", error);
+                document.getElementById('daten-liste').innerHTML = "Fehler beim Laden der Daten.";
+                return;
+            }
+
+            // HTML Liste aufbauen
+            const liste = document.getElementById('daten-liste');
+            liste.innerHTML = ""; // "Lade..." Text entfernen
+
+            if (data.length === 0) {
+                liste.innerHTML = "<li>Noch keine Nachrichten vorhanden.</li>";
+            }
+
+            data.forEach(eintrag => {
+                const li = document.createElement('li');
+                // Erstelle das Datum lesbar (Spaltennamen "text" und "created_at" anpassen!)
+                const zeit = new Date(eintrag.created_at).toLocaleString('de-DE');
+                li.innerHTML = `${eintrag.text} <span class="zeit">${zeit}</span>`;
+                liste.appendChild(li);
+            });
+        }
+
+        // Starte die Funktion beim Laden der Seite
+        holeDaten();
+    </script>
 </body>
 </html>
